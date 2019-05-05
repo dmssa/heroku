@@ -1,0 +1,1676 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=windows-1251"> 
+		<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+		<style>
+		
+.calendar_cell{
+	display:table-cell;
+	text-align:center;
+}
+.calendar_current_cell{
+	background:#CDF;
+	display:table-cell;
+	text-align:center;
+}
+.calendar_outer_cell{
+	color:#BBB;
+	display:table-cell;
+	text-align:center;
+}
+.calendar_hidden_cell{
+	display:none;
+	text-align:center;
+}
+
+.calendar_head{
+	cursor:default;
+	display:inline-block;
+	text-align:center;
+	width:100%;
+	background:#f8f8f8;
+}
+.calendar_body{
+	cursor:default;
+	background:#EEE;
+	width:100%;
+	height:calc( 100% - 18px );
+}
+.calendar_window{
+	position:absolute;
+}
+.calendar_button{
+	cursor:default;
+	position:absolute;
+	width:15px;
+	top:0px;
+	text-align:center;
+	background: radial-gradient(farthest-side ellipse at top left, white, #aaa);
+	box-shadow: 1px 2px 4px rgba(0,0,0,0.3), -1px -2px 4px rgba(255,255,255,0.5);
+}
+		
+		
+		
+body{
+	margin:0px;
+	padding:0px;
+	overflow:hidden;
+	min-width:480px;
+}
+#menu
+{
+	float:right;
+	width:120px;
+	background:#eee;
+	margin-left:-120px;
+	height:100%;
+}
+#connection{
+	height:20px;
+	width:100%;
+	background:grey;
+}
+#time
+{
+	width:100%;
+	text-align: center;
+}
+#window_wrap
+{
+	float:left;
+	width:100%;
+}
+#window
+{
+	background:#eee;
+	height:100%;
+	margin-right:120px;
+}
+#log_window{
+	position:relative;
+	width:100%;
+	height:75%;
+	overflow:auto;
+	background:#fff;
+}
+#stateInfo{
+	position:relative;
+	width:100%;
+	height:25%;
+	overflow:hidden;
+}
+#score{
+	overflow:hidden;
+}
+.nasos
+{
+	width:calc((100% - 20px) / 5 - 10px);
+	height:100%;
+	display:inline-block;
+}
+.time_break
+{
+	font-size:x-small;
+	opacity:0.5;
+	background:#bbb;
+	width:100%;
+}
+.table-np{
+	width:40px;
+}
+.table-cell{
+	min-width:40px;
+	text-align:center;
+}
+
+.table-cell-on{
+	min-width:40px;
+	background:#eee;
+	text-align:left;
+}
+.table-cell-off{
+	min-width:40px;
+	background:lightgreen;
+	text-align:right;
+}
+.table-cell-error{
+	min-width:40px;
+	background:rgb(255,150,150);
+	text-align:center;
+}
+.table-score-spacer-cell{
+	border:0px;
+	min-width:0px;
+	margin:0px;
+	padding:0px;
+	
+}
+.nasos_image
+{
+	visibility:hidden;
+	margin-left: auto;
+    margin-right: auto;
+	display: block;
+	height:100%;
+	width:auto;
+}
+.graph_hour{
+	display:inline-block;
+}
+.graph_nasos{
+	display:block;
+	margin-top:1px;
+	margin-bottom:1px;
+	overflow:hidden;
+}
+.graph_n1{
+	background:#FAA;
+}
+.graph_n2{
+	background:#FFA;
+}
+.graph_n3{
+	background:#FAF;
+}
+.graph_n4{
+	background:#AFF;
+}
+.graph_n5{
+	background:#AAF;
+}
+
+		</style>
+		<script src="/script/ajax.js" ></script>
+		<script>
+		
+var timeOffset = 7;
+function new_calendar(elem,d){
+	var res = {
+		elem:null,
+		grid:[],
+		currCell:null,
+		head:null,
+		body:null,
+		date:null,
+		minHeight:50,
+		days:["Пн","Вт","Ср","Чт","Пт","Сб","Вс"],
+		months:["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"],
+			
+		onDateChange:null,
+		show:function(newDate){			// show(new Date()), show(Date.parse(Date.now()))
+			res.elem.style["display"] = "block";
+	//		this.elem.parentNode.appendChild(this);
+			res.shift(newDate);
+			window.addEventListener('keypress',res.tablekey,false);
+			window.addEventListener('keydown',res.tableArrowKey,false);
+			window.addEventListener('click',res.hide,false);
+		},
+		hide:function(){
+			window.removeEventListener('click',res.hide,false);
+			res.elem.style["display"] = "none";
+			window.removeEventListener('keypress',res.tablekey,false);
+			window.removeEventListener('keydown',res.tableArrowKey,false);
+		},
+		tablekey:function (event){
+			if(event.target.tagName=="TD" && event.target.className.startsWith("calendar")){
+				switch(event.key){
+					case "Enter":
+						var ev = new Event("click",{bubbles: true, cancelable: true});
+						event.target.dispatchEvent(ev);
+					break;
+				}
+			}
+		},
+		tableArrowKey:function (event){
+			if(event.target.tagName=="TD" && event.target.className.startsWith("calendar")){
+				var elem = event.target;
+				var calendar = elem.parentNode.parentNode.calendar;
+				var offset=elem.date.getTime();		
+				switch(event.key){
+					case "ArrowUp":
+						offset+=-1000*60*60*24*7;
+					break;
+					case "ArrowDown":
+						offset+=1000*60*60*24*7;
+					break;
+					case "ArrowLeft":
+						offset+=-1000*60*60*24;
+					break;
+					case "ArrowRight":
+						offset+=1000*60*60*24;
+					break;
+				}
+				var d=new Date();
+				d.setTime(offset);
+				calendar.shift(d);
+			}
+		},
+		init:function(parent, start_date){
+			var self=this;
+			var elem = document.createElement("div");
+			elem.className = "calendar_window";
+			var prev = document.createElement("div");
+			var p = document.createElement("div");
+			var reset = document.createElement("div");
+			var next = document.createElement("div");
+			
+			prev.innerHTML = "<";
+			reset.innerHTML = "0";
+			next.innerHTML = ">";
+			prev.className="calendar_button";
+			reset.className="calendar_button";
+			next.className="calendar_button";
+			
+			next.style["right"]="0px";
+			reset.style["right"]="15px";
+			
+			this.head = p;
+			p.className="calendar_head";
+			
+			elem.appendChild(prev);
+			elem.appendChild(p);
+			elem.appendChild(reset);
+			elem.appendChild(next);
+			
+			
+			
+			function prevclick(ev){
+				var d = new Date(1900+self.date.getYear(),self.date.getMonth()-1,self.date.getDate());
+				self.shift(d);
+				if(!!self.currCell)self.currCell.focus();
+				return res.eventCancelBloob(ev);;
+			}
+			function prevmousedown(ev){
+				return res.eventCancelBloob(ev);;
+			}
+			function nextclick(ev){
+				var d = new Date(1900+self.date.getYear(),self.date.getMonth()+1,self.date.getDate());
+				self.shift(d);
+				if(!!self.currCell)self.currCell.focus();
+				return res.eventCancelBloob(ev);;
+			}
+			function nextmousedown(ev){
+				return res.eventCancelBloob(ev);;
+			}
+			function resetclick(ev){
+				var d = new Date();
+				self.shift(d);
+				if(!!self.currCell)self.currCell.focus();
+				return res.eventCancelBloob(ev);;
+			}
+			function resetmousedown(ev){
+				return res.eventCancelBloob(ev);;
+			}
+			
+			prev.addEventListener('click',prevclick,false);
+			prev.addEventListener('mousedown',prevmousedown,false);
+			prev.addEventListener('touchstart',prevmousedown,false);
+			next.addEventListener('click',nextclick,false);
+			next.addEventListener('mousedown',nextmousedown,false);
+			next.addEventListener('touchstart',nextmousedown,false);
+			reset.addEventListener('click',resetclick,false);
+			reset.addEventListener('mousedown',resetmousedown,false);
+			reset.addEventListener('touchstart',resetmousedown,false);
+			
+			var table = document.createElement("table");
+			table.className = "calendar_body";
+			this.body=table;
+			
+			function tableclick(event){
+				if(!!event && !!event.srcElement && !! event.srcElement.date){
+					self.shift(event.srcElement.date);
+					if(!!self.onDateChange) self.onDateChange(self.date);
+				}
+				if(!!self.currCell)self.currCell.focus();
+			}
+			function tablemousedown(ev){
+				if(!!event && !!event.srcElement && !! event.srcElement.date){
+					return res.eventCancelBloob(ev);
+				}
+				return false;
+			}
+			table.addEventListener('click',tableclick,false);
+			table.addEventListener('mousedown',tablemousedown,false);
+			table.addEventListener('touchstart',tablemousedown,false);
+			
+			elem.appendChild(table);
+			for(var y=0;y<7;y++){
+				var tr = document.createElement("tr");
+				this.grid.push([]);
+				for(var x=0;x<7;x++){
+					var td = document.createElement("td");
+					td.className="calendar_cell";
+					if(y==0){
+						td.innerHTML = this.days[x]
+					}else{
+						td.tabIndex="0";
+						this.grid[y-1].push(td);
+					}
+					tr.appendChild(td);
+				}
+				table.appendChild(tr);
+			}
+			this.elem=elem;
+			
+			table.calendar = this;
+			if(parent==null){parent=document.body}
+			parent.appendChild(elem);
+			this.shift(start_date, true);
+		},
+		shift:function(newdate, saveMinSize=false){
+			var t;
+			var d = new Date();
+			if(typeof(newdate)=='number'){
+				t = newdate;
+			}else{
+				t = Date.parse(newdate);
+			}
+			if(!!t)d.setTime(t);
+			d.setHours(timeOffset);
+			this.date=d;
+			var m_date = new Date(1900+d.getYear(),d.getMonth(),1);
+			var offset = m_date.getDay();
+			var skipRow = offset>0;
+			var offset = offset+(skipRow?-2:5);
+			this.head.innerHTML =  this.months[d.getMonth()] + " " + (1900+d.getYear());
+			for(var y=0;y<6;y++){
+				for(var x=0;x<7;x++){
+					var td=this.grid[y][x];
+					if(y==5 && skipRow){
+						td.innerHTML = "";
+						td.className = "calendar_hidden_cell";
+					}else{
+						var dt = new Date(1900+d.getYear(),d.getMonth(),7*y+x-offset);
+						td.innerHTML = dt.getDate();
+						td.date = dt;
+						if(dt.getYear() == d.getYear() && dt.getMonth() == d.getMonth() && dt.getDate() == d.getDate()){
+							td.className = "calendar_current_cell";
+							td.focus();
+							this.currCell=td;
+						}else{
+							if(dt.getMonth() != d.getMonth()){
+								td.className = "calendar_outer_cell";
+							}else{
+								td.className = "calendar_cell";
+							}
+						}
+					}
+				}
+			}
+			if(saveMinSize){
+				this.minHeight = (parseInt(this.elem.offsetHeight) - (skipRow?0:20));
+				this.elem.style["minWidth"] = this.elem.offsetWidth;
+			}
+			this.elem.style["minHeight"]=(this.minHeight+(skipRow?0:20))+'px';
+		},
+	
+		eventCancelBloob:function(e){
+			if (e.cancelable) {
+				if(e.type!='touchstart'){
+					e.preventDefault();
+				}
+				e.stopPropagation();
+			}
+			return true;
+		}
+	}
+	res.init(elem,(!d?new Date():d));
+	res.hide();
+	return res;
+}
+
+		</script>
+<script>
+
+var sound_off 	= 'media\\off.wav';
+var sound_on 	= 'media\\on.wav';
+var sound_error = 'media\\error.mp3';
+
+ 
+function to_kv(string, separator){
+	var arr = string.split(separator);
+	return {"key":arr[0],"value":arr.length<2?"":arr[1]};
+}
+function to_hash(record){
+	var hash = [];
+	var arr = record.split("&");
+	for(var r in arr)
+	{
+		var t=to_kv(arr[r],"=");
+//		var t=arr[r].split("=");
+		hash[t.key]=t.value;
+	}
+	return hash;
+}
+function to_event_record(str){
+	var rec = {};
+	hash = to_hash(str);
+	var t = new Date(hash["time"]);
+	if(t!="Invalid Date"){
+		rec["time"] = t;
+	}
+	if(hash["log"]=="empty"){
+		rec["empty"] = true;
+	}else{
+		rec["empty"] = false;
+		try{
+		rec["id"]  = t.toISOString();
+		}catch(ex)
+		{console.log("Invalid eventRecord string : "+str)}
+		rec["ids"] = hash["id"] || hash["ids"];
+if(rec["ids"]=="undefined"){
+	console.log(str);
+}	
+		rec["index"] = hash["index"];
+	}
+	rec["n"] = hash["n"];
+	rec["state"] = hash["state"];
+	rec["currentTime"]=false;
+	return rec;
+}
+
+
+//var fillStr = function(str,chr,length){
+//	str = "" + str; //  str to String
+//	while(str.length<length){	//  заполняем до длины length
+//		str = chr + str;
+//	}
+//	return str;
+//}
+
+
+var Nasos=[];
+
+//  часы
+var time;
+var time_int;
+var time_div;
+var time_counter = 0;
+var time_nano = 60;
+var sys_time_last;
+function refresh_time(){  //  обновляем часы
+	
+	var dayChange=false;
+	var nextDay;
+	if(!!table && !!table.start){
+		nextDay = new Date(table.start+24*3600000);
+		dayChange = time<nextDay;
+	}
+	
+	if(!!sys_time_last){
+		var next_time = new Date();
+		time.setMilliseconds(time.getMilliseconds() + (next_time.getTime()-sys_time_last.getTime()));  //  обновляем часы
+		sys_time_last = next_time;
+	}else{
+		sys_time_last = new Date();
+	}
+	if(time_counter > time_nano){	// 1 раз в 60 запросов синхронизировать с сервером
+		ajax("/server?date",time_div,function(time_div,result){
+			var kv = to_hash(result);
+//console.log(kv);
+			if(!!kv["date"]){
+				var servertime = new Date(kv["date"]);
+				if(servertime.getYear()>100 && servertime.getTime()!=time.getTime()){
+					time = servertime;
+					sys_time_last = new Date();
+				}
+			}
+		});
+		
+		this.time_counter=0;
+	}else{
+		this.time_counter++;
+	}
+	
+	if(!!nextDay){
+		dayChange = (dayChange == (time>nextDay));
+		if(dayChange){
+			table.create();
+		}
+	}
+	
+	if(this.time_div){	//  перерисовываем элемент
+		var tl = time.toLocaleTimeString();
+		this.time_div.innerHTML = tl+"<br>"+time.toLocaleDateString();
+		var elems = document.getElementsByClassName("time");
+		for(var i=0;i<elems.length;i++){
+			elems[i].event.time = time;
+			elems[i].innerHTML = tl;
+		}
+		
+		var elems = document.getElementsByClassName("score");
+		for(var i=0;i<elems.length;i++){
+			var index = elems[i].id[5];  // score+index
+			//elems[i].innerHTML = 
+			table.getScore(parseInt(index)-1);
+		}
+	}
+}
+
+
+//"/com"
+var stream_int;
+var state_div;
+var isConnected = false;
+function com_stream()
+{
+	refresh_time();
+	if(last_connected()>10000)
+	{
+		state_div.style["background"]="red";
+		isConnected = false;
+	}
+	if(last_connected()>1000)
+	{
+		//refresh_state_server();
+		ajax("/server",state_div,function(elem,response)
+		{
+	
+			//console.log("/server "+ response);
+			var d;
+			var n;
+			var hash = to_hash(response);
+			if(!!hash["connection"]){
+				if(elem){
+					if(hash["connection"]=="1")
+					{
+						if(!isConnected){	// Обновляем при подключении
+						//	refresh_state_serial();
+							refresh_state_server();
+						}
+						elem.style["background"]="green";
+						isConnected = true;
+					}else
+					{
+						elem.style["background"]="red";
+						isConnected = false;
+					}
+				}
+			}
+			if(!!hash["n"]){
+				n=parseInt(hash["n"]);
+			}
+			if(!!hash["d"]){
+				d=parseInt(hash["d"]);
+			}
+			if(!!hash["state"]){
+				state = parseInt(hash["state"]);
+				if(!!n && !(state==null)){
+			
+				refresh_state_server();
+						
+					//set_state(n-1,state);
+					//table.refresh_delay();
+				}
+				//table.newRow(response)
+			}
+
+			if(!!hash["SessionId"]){
+				setNewId(hash["SessionId"]);
+			}
+		});
+	}
+}
+
+//var n_img;
+//var void_img;
+var calendar;
+
+var audio_off = new Audio();
+var audio_on = new Audio();
+var audio_error = new Audio();
+  
+function initSound() {
+  audio_off.start=function(){};
+  audio_on.start =function(){};
+  audio_error.start =function(){};
+  
+  audio_off.addEventListener('loadeddata', function() {
+	audio_off.start=audio_off.play;
+  }, false);
+  audio_on.addEventListener('loadeddata', function() {
+	audio_on.start=audio_off.play;
+  }, false);
+  audio_error.addEventListener('loadeddata', function() {
+	audio_error.start=audio_off.play;
+  }, false);
+  
+  audio_off.src = sound_off;
+  audio_off.preload='auto';
+  audio_on.src = sound_on;
+  audio_on.preload='auto';
+  audio_error.src = sound_error;
+  audio_error.preload='auto';
+}
+
+var currentScreen;
+function init()
+{
+
+	initSound();
+	
+	for(var n=1;n<=5;n++)
+	{
+		Nasos.push(NasosC(n));
+	}
+						
+	time = new Date();
+	time_div = document.getElementById("time");
+	
+	state_div = document.getElementById("connection");
+	
+	stream_int = setInterval(com_stream,1000);
+	
+	currentScreen = table;
+	currentScreen.create();
+	
+	onResizeBody();
+	
+}
+
+var graph = {
+	date:new Date(),
+	elem:function(){graph["elem"] = document.getElementById("log"); return graph.elem;},
+	canvas:null,
+	title_elem:null,
+	bars:[],
+	create:function(){
+		
+		var is_first_run = false
+		if(typeof(graph.elem)=="function"){is_first_run = true;}
+		
+		if(is_first_run){ 
+			graph.elem();
+			
+			var nav = document.createElement("div");
+			var back = document.createElement("button");
+			back.innerHTML = "Ранее";
+			back.onclick=function(){
+				graph.date.setDate(graph.date.getDate()-1);
+				graph.create();
+			}
+			var p = document.createElement("p");
+			p.style["display"] = "inline-block";
+			graph.title_elem = p;
+			
+			
+			
+			calendar = new_calendar(nav);
+			calendar.elem.style.left = "17px";
+			calendar.elem.style.top = "35px";
+			p.onclick=function(e){
+				calendar.show(graph.date);
+				return calendar.eventCancelBloob(e);
+			}
+			calendar.onDateChange = function(newDate){
+				calendar.hide();
+				//if(graph.date<newDate)
+				{
+					graph.date.setTime(newDate.getTime());
+					graph.create();
+				}
+			}
+			
+			
+			
+			
+			var next = document.createElement("button");
+			next.innerHTML = "Позднее";
+			next.onclick=function(){
+				var d = new Date();
+				d.setDate(d.getDate()-1);
+				if(graph.date<d)
+				{
+					graph.date.setDate(graph.date.getDate()+1);
+					graph.create();
+				}
+			}
+			nav.appendChild(back);
+			nav.appendChild(p);
+			nav.appendChild(next);
+			
+			
+			graph.canvas = document.createElement("div");
+			graph.canvas.style["width"] = "100%";
+			graph.canvas.style["height"] = "100%";
+			graph.hours=[];
+			for(var h=0;h<24;h++){
+				var hour=[];
+				graph.hours.push(hour);
+				var hours_div = document.createElement("div");
+				hours_div.className = "graph_hour";
+				graph.canvas.appendChild(hours_div);
+				graph.bars[h]=[];
+				for(var n=1;n<7;n++){
+					var nasos_div = document.createElement("div");
+					hours_div.appendChild(nasos_div);
+					if(n==6){
+						var display_hour = (timeOffset+h)%24;
+						nasos_div.innerHTML = (display_hour<10?"0":"")+display_hour;//+":00";
+					}else{
+						nasos_div.className ="graph_nasos graph_n"+n;
+						nasos_div.title = "Насос "+n;
+						nasos_div.innerHTML = n;
+						graph.bars[h][n] = nasos_div;
+					}
+					var ns={elem:nasos_div, events:[]};
+					hour.push(ns);
+				}
+			}
+			
+			graph.elem.innerHTML = "";
+			graph.elem.appendChild(nav);
+			graph.elem.appendChild(graph.canvas);
+			
+			graph.fixWidth();
+			
+		}else{
+			for(var x=0;x<5;x++)
+			{
+				for(var y=0;y<24;y++){
+					graph.hours[y][x].events = [];
+				}
+			}
+		}
+		
+		graph.start = new Date(graph.date);
+		graph.start.setMilliseconds(0);
+		graph.start.setSeconds(0);
+		graph.start.setMinutes(0);
+		if(graph.start.getHours()<timeOffset){
+			graph.start.setDate(graph.start.getDate()-1);
+		}
+		graph.start.setHours(timeOffset);
+		
+		var end = new Date(1*graph.start+24*3600000 - 1);
+		if(end>time){
+			graph.end = time;
+		}else{
+			graph.end = end; 
+		}
+		
+		
+		graph.title_elem.innerHTML=graph.start.toLocaleDateString();
+		
+		ajax("/server?date",time_div,function(time_div,result){
+			var kv = to_hash(result);
+			if(!!kv["date"]){
+				var servertime = new Date(kv["date"]);
+				if(servertime.getYear()>100 && servertime.getTime()!=time.getTime()){
+					time = servertime;
+					sys_time_last = new Date();
+				}
+			}
+			graph.findEvents(-1, function(rec){
+				var hour0 = (rec.time.getHours()+24-timeOffset)%24;
+				graph.hours[hour0][rec.n-1].events.push(rec);
+			},graph.refresh);
+
+		});
+	},
+	findEvents:function(nIndex, onrecord, after){
+			//var n = nIndex+1;
+			// берём все записи в таблице
+			graph.find_by_time_period(graph.start, graph.end, -1, -1, -1 /*n*/ , function(list){
+				var first=[];
+				var last=[];
+				var states=[];
+				for(var i=0;i<list.length;i++){
+					if(list[i]=="")continue;
+					var rec = to_event_record("n="+list[i]);
+					if(rec.hasOwnProperty("time") && rec.time.getYear()>100){
+						
+						// если первое событие после начала таблицы и остановка насоса, предыдущее событие не записано в лог
+						if(first[rec.n]==undefined && rec.time>=graph.start && (rec.state==0 || rec.state==2)){
+							var rec0 = to_event_record("n="+rec.n+"&state="+3+"&time="+graph.start.toISOString());
+					//		onrecord(rec0);
+							first[rec.n] = rec0;
+						}
+						// если событие до таблицы  
+						if(rec.time<graph.start){
+							if(rec.state==1){			//	это включение 
+								first[rec.n] = rec;		//	запоминаем первое событие до таблицы
+								rec.time = graph.start; //	обрезаем время
+								rec.state = 3;
+							}else{
+								first[rec.n] = rec;
+								states[rec.n]=rec.state;
+								continue;				//	пропускаем
+							}
+						}
+						// сохраняем последнее событие в таблице
+						if(last[rec.n]==undefined || rec.time>last[rec.n].time){
+							last[rec.n] = rec;
+						}
+						// если событие после таблицы обрезаем время
+						if(rec.time.getTime()>graph.end.getTime()){
+							if(first[rec.n]!=undefined && (states[rec.n]==1||states[rec.n]==3) && (rec.state==0 || rec.state==2)){	//	это выключение
+								rec.time = graph.end;			// обрезаем время
+								rec.state = 4;
+							}else{
+							//	console.log("событие ушло вперёд на "+(rec.time.getTime()-graph.end.getTime())+" мс")
+								//if(rec.time.getTime()-graph.end.getTime()<1000){
+								//	rec.time = graph.end;			// обрезаем время
+								//	rec.state = 4;
+								//}else{
+							//		console.log("событие не отражено n="+rec.n+"&state="+rec.state+"&time="+rec.time+"&id="+rec.ids);
+									continue;						// пропускаем
+								//}
+							}
+						}
+						onrecord(rec);
+						states[rec.n]=rec.state;
+						
+					}
+				}
+				for(var n=1;n<6;n++){
+					if(last[n]!=undefined){
+						var rec = last[n];
+						// если последнее событие - в таблице и запуск насоса, следующее событие не записано в лог
+						if(rec.time<=graph.end && (rec.state==1|rec.state==3)){
+							var rec1 = to_event_record("n="+n+"&state="+4+"&time="+graph.end.toISOString());
+							if(time<=graph.end){
+								rec1.time=time;
+								rec1["currentTime"] = true;
+							}
+							onrecord(rec1);
+						}
+					}
+				}
+				after();
+			});
+		},
+	
+	newDiv:function(event,parent){
+		var div = document.createElement("div");
+		graph.setStyle(div,event);
+		div.innerHTML = event.time.toLocaleTimeString();
+		parent.appendChild(div);
+		event.elem = div;
+		return div;
+	},
+	
+	getNasosTimeByHour:function(hour,nasos){
+	
+		var prevHourEvent = function(hour,nasos){
+			var prevHour = hour-1;
+			while(prevHour>=0){
+				var pe = graph.hours[prevHour][nasos-1].events;
+				if(pe.length>0){
+					return pe[pe.length-1];
+				}
+				prevHour--;
+			}
+			return null;
+		}
+		
+		var nextHourEvent = function(hour,nasos){
+			var nextHour = hour+1;
+			while(nextHour<24){
+				var ne = graph.hours[nextHour][nasos-1].events;
+				if(ne.length>0){
+					return ne[ne.length-1];
+				}
+				nextHour++;
+			}
+			return null;
+		}
+		
+		var getMsFromMinutes = function(time){
+			return (time.getMinutes()*60 + time.getSeconds())*1000+time.getMilliseconds()
+		}
+	
+		var result = 0;
+		var events = graph.hours[hour][nasos-1].events;
+		
+		if(events.length==0){
+			var prevEvent = prevHourEvent(hour,nasos);
+			if(!!prevEvent && prevEvent.state%2==1){
+				var nextEvent = nextHourEvent(hour,nasos);
+				if(!!nextEvent){
+					graph.bars[hour][nasos].style["height"] = parseInt(graph.canvas.offsetHeight)/5;
+				}
+			}
+		}else{
+			var total = 0;
+			var first = events[0];
+			if(first.state%2==0){
+				var prevEvent = prevHourEvent(hour,nasos);
+				if(!!prevEvent && prevEvent.state%2==1){
+					total+=getMsFromMinutes(first.time);
+				}
+			}
+			
+			var start=0;
+			for(var e=0;e<events.length;e++){
+			
+				if(events[e].state%2==1){
+					start = events[e].time;
+				}else{
+					if(start!=0){
+						total += events[e].time-start;
+						start=0;
+					}else{  //
+					}
+				}
+			}
+			var last = events[events.length-1];
+			if(last.state%2==1){
+				var nextEvent = nextHourEvent(hour,nasos);
+				
+				if(!!nextEvent && nextEvent.state%2==0){
+					total += 3600000 - getMsFromMinutes(last.time);
+				}
+			}
+			var new_height = parseInt(graph.elem.offsetHeight);
+			new_height = new_height * total;
+			new_height = new_height / 5 / 60/60/1000;
+			graph.bars[hour][nasos].style["height"] = new_height+"px";
+			
+			
+		}
+	},
+	
+	refresh:function(){
+		for(var h=0;h<24;h++){
+			for(var n=1;n<=5;n++){
+				graph.getNasosTimeByHour(h,n);
+			}
+		}
+		graph.fixWidth();
+		
+	},
+	height_cell:16,
+//	height_pixel:function(){return table.elem.clientHeight;},
+//	height_p_pixel:function(){return table.elem.parentNode.clientHeight;},
+//	top_p_pixel:function(){return table.elem.parentNode.scrollTop;},
+	
+	hours:[],
+	fixWidth:function(){
+	
+		var w = parseInt(graph.canvas.offsetWidth)/24 - 2;
+		var hours = document.getElementsByClassName("graph_hour");
+		for(var i=0;i<hours.length;i++){
+			hours[i].style.width = w+"px";
+		}
+//		var widths = 40;
+//		for(var x=0;x<5;x++){
+//			widths+=parseInt(table.hours[0][x].elem.offsetWidth)+1;
+//		}
+//		var spacer = document.getElementsByClassName("table-score-spacer-cell")[0];
+		
+//		spacer.style["width"]=(parseInt(table.tscore.offsetWidth) - widths)+"px";
+	},
+	
+	setStyle:function(elem,rec){
+		//console.log(elem.className);
+		//var classes = [];
+		//var tablestyles = ["table-cell-off","table-cell-on","table-cell-error"];
+		//if(elem.className){
+		//	classes = elem.className.split(" ");
+		//	for(var i=0;i<classes.length;i++){
+		//		if(tablestyles.includes(classes[i])){
+		//			classes[i]="";
+		//		}
+		//	}
+		//}
+		switch(rec.state)
+		{
+			case "0":
+				//elem.style["background"] = "lightgreen"; 
+				//classes.push(tablestyles[0]);
+				elem.className = "table-cell-off";
+			break;
+			case "2":
+				//elem.style["background"] = "red";
+				//classes.push(tablestyles[2]);
+				elem.className = "table-cell-error";
+			break;
+			case "1":
+			default:
+				//elem.style["background"] = "#eee"; 
+			//	classes.push(tablestyles[1]);
+				elem.className = "table-cell-on";
+			break;
+		}
+		//elem.className = classes.join(" ");
+		//console.log(elem.className);
+	},
+	find_by_time_period:function(start_time, end_time, backward = -1, state = -1, n = -1, onresult, onfail){
+		
+		var reqstr = "/server?start_log="+start_time.toISOString()+"&end_log="+end_time.toISOString()+(backward==-1?"":"&mode="+backward)+(state==-1?"":"&states="+state)+(n==-1?"":"&ns="+n)+"&log";
+		
+		ajax(reqstr,graph,function(elem,response)
+		{
+			var list = response.split("n=");
+			if(list.length<1){
+				if(onfail!=null) onfail(rec);
+				return;
+			}
+			//list.shift();  //  skip log=...
+			if(onresult!=null) onresult(list);
+			//for(var i=0;i<list.length;i++){
+				//var rec = to_event_record("n="+list[i]);
+				//if(rec.hasOwnProperty("time") && rec.time.getYear()>100){
+				//	if(onresult!=null) onresult(rec, i, list);
+				//}	
+			//}
+		});
+	}
+}
+
+
+var table = {
+	date:new Date(),
+	elem:function(){table["elem"] = document.getElementById("log"); return table.elem;},
+	title_elem:null,
+	score:[],
+	tscore:function(){
+			var tscore = document.createElement("table");
+			var tr = document.createElement("tr");
+			for(var x=0;x<=6;x++){
+				var td = document.createElement("td");
+				tr.appendChild(td);
+				if(x==0){
+					td.className = "table-np";
+					td.innerHTML = "00:00";
+					td.style["color"] = "rgba(255,255,255,0)";
+				}else{
+					if(x<6){
+						td.id = "score"+x;
+						td.className = "score table-cell";
+						table.score[x-1].elem = td;
+					}else{
+						td.className = "table-score-spacer-cell";
+						
+					}		
+				}
+			}
+			tscore.appendChild(tr);
+			tscore.cellSpacing="0";
+			tscore["border"]="1 solid black"; 
+			tscore.style["width"] = "100%";
+			table.tscore = tscore;
+			var elem = document.getElementById("score");
+			elem.appendChild(tscore);
+		},
+	create:function(){
+		
+		var is_first_run = false
+		if(typeof(table.elem)=="function"){is_first_run = true;}
+		
+		if(is_first_run){ 
+			table.elem();
+			
+			var nav = document.createElement("div");
+			var back = document.createElement("button");
+			back.innerHTML = "Ранее";
+			back.onclick=function(){
+				table.date.setDate(table.date.getDate()-1);
+				table.create();
+			}
+			var p = document.createElement("p");
+			p.style["display"] = "inline-block";
+			table.title_elem = p;
+			
+			
+			
+			calendar = new_calendar(nav);
+			calendar.elem.style.left = "17px";
+			calendar.elem.style.top = "35px";
+			p.onclick=function(e){
+				calendar.show(table.date);
+				return calendar.eventCancelBloob(e);
+			}
+			calendar.onDateChange = function(newDate){
+				calendar.hide();
+				//if(table.date<newDate)
+				{
+					table.date.setTime(newDate.getTime());
+					table.create();
+				}
+			}
+			
+			
+			
+			
+			var next = document.createElement("button");
+			next.innerHTML = "Позднее";
+			next.onclick=function(){
+				var d = new Date();
+				d.setDate(d.getDate()-1);
+				if(table.date<d)
+				{
+					table.date.setDate(table.date.getDate()+1);
+					table.create();
+				}
+			}
+			nav.appendChild(back);
+			nav.appendChild(p);
+			nav.appendChild(next);
+			
+			
+			var t = document.createElement("table");
+			t.cellSpacing="0";
+			t["border"]="1 solid black"; 
+			t.style["width"] = "100%";
+			
+			
+			for(var x=0;x<5;x++){
+				var sc = {}; //id, elem, values
+				table.score.push(sc);
+			}
+			for(var y=0;y<25;y++){
+				var tr = document.createElement("tr");
+				t.appendChild(tr);
+				
+				//if(y==0){
+				//	continue;
+				//}
+				switch(y){
+					case 0:
+						for(var x=0;x<6;x++){
+							var td = document.createElement("th");
+							tr.appendChild(td);
+							if(x>0){
+								td.innerHTML = "Насос&nbsp"+x;
+							}
+						}
+					break;
+					default:
+						var hour=[]
+						table.hours.push(hour);
+				
+						for(var x=0;x<6;x++){
+							var td = document.createElement("td");
+							tr.appendChild(td);
+							
+							if(x>0){
+		// table.hours[hour][n]={elem,events:[]}
+								var n={elem:td, events:[]};
+								hour.push(n);
+								td.style["minHeight"]=table.height_cell;
+								td.className = "table-cell";
+						
+							}else{
+								td.className = "table-np";
+								var h = (y-1+parseInt(timeOffset))%24;
+								td.innerHTML = (h<10?"0":"") + parseInt(h)+":00";
+							}
+						}
+					break;
+				}
+				
+			}
+			table.elem.innerHTML = "";
+			table.elem.appendChild(nav);
+			table.elem.appendChild(t);
+			
+			table.tscore();
+			table.fixWidth();
+			
+		}else{
+		
+			for(var x=0;x<5;x++)
+			{
+				table.score[x].elem.innerHTML = "";
+				for(var y=0;y<24;y++){
+					table.hours[y][x].events = [];
+				}
+			}
+		}
+
+
+		//if(table.refreshRequests!=0){
+		//	if(table.refresh_timeout == null) {
+		//		table.refresh_timeout =	setTimeout(table.create,500);
+		//		return;
+		//	}
+		//	table.refreshRequests=0;
+		//}
+				
+		table.score.values = [];
+		
+		table.start = new Date(table.date);
+		table.start.setMilliseconds(0);
+		table.start.setSeconds(0);
+		table.start.setMinutes(0);
+		if(table.start.getHours()<timeOffset){
+			table.start.setDate(table.start.getDate()-1);
+		}
+		table.start.setHours(timeOffset);
+		
+		var end = new Date(1*table.start+24*3600000 - 1);
+		if(end>time){
+			table.end = time;
+		}else{
+			table.end = end; 
+		}
+		
+		
+		table.title_elem.innerHTML=table.start.toLocaleDateString();
+		
+		ajax("/server?date",time_div,function(time_div,result){
+			var kv = to_hash(result);
+			if(!!kv["date"]){
+				var servertime = new Date(kv["date"]);
+				if(servertime.getYear()>100 && servertime.getTime()!=time.getTime()){
+					time = servertime;
+					sys_time_last = new Date();
+				}
+			}
+			table.findEvents(-1, function(rec){
+				var hour0 = (rec.time.getHours()+24-timeOffset)%24;
+				table.hours[hour0][rec.n-1].events.push(rec);
+			},table.refresh);
+
+		});
+	},
+	findEvents:function(nIndex, onrecord, after){
+			//var n = nIndex+1;
+			// берём все записи в таблице
+			table.find_by_time_period(table.start, table.end, -1, -1, -1 /*n*/ , function(list){
+				var first=[];
+				var last=[];
+				var states=[];
+				for(var i=0;i<list.length;i++){
+					if(list[i]=="")continue;
+					var rec = to_event_record("n="+list[i]);
+					if(rec.hasOwnProperty("time") && rec.time.getYear()>100){
+						
+						// если первое событие после начала таблицы и остановка насоса, предыдущее событие не записано в лог
+						if(first[rec.n]==undefined && rec.time>=table.start && (rec.state==0 || rec.state==2)){
+							var rec0 = to_event_record("n="+rec.n+"&state="+3+"&time="+table.start.toISOString());
+					//		onrecord(rec0);
+							first[rec.n] = rec0;
+						}
+						// если событие до таблицы  
+						if(rec.time<table.start){
+							if(rec.state==1){			//	это включение 
+								first[rec.n] = rec;		//	запоминаем первое событие до таблицы
+								rec.time = table.start; //	обрезаем время
+								rec.state = 3;
+							}else{
+								first[rec.n] = rec;
+								states[rec.n]=rec.state;
+								continue;				//	пропускаем
+							}
+						}
+						// сохраняем последнее событие в таблице
+						if(last[rec.n]==undefined || rec.time>last[rec.n].time){
+							last[rec.n] = rec;
+						}
+						// если событие после таблицы обрезаем время
+						if(rec.time.getTime()>table.end.getTime()){
+							if(first[rec.n]!=undefined && (states[rec.n]==1||states[rec.n]==3) && (rec.state==0 || rec.state==2)){	//	это выключение
+								rec.time = table.end;			// обрезаем время
+								rec.state = 4;
+							}else{
+							//	console.log("событие ушло вперёд на "+(rec.time.getTime()-table.end.getTime())+" мс")
+								//if(rec.time.getTime()-table.end.getTime()<1000){
+								//	rec.time = table.end;			// обрезаем время
+								//	rec.state = 4;
+								//}else{
+							//		console.log("событие не отражено n="+rec.n+"&state="+rec.state+"&time="+rec.time+"&id="+rec.ids);
+									continue;						// пропускаем
+								//}
+							}
+						}
+						onrecord(rec);
+						states[rec.n]=rec.state;
+						
+					}
+				}
+				for(var n=1;n<6;n++){
+					if(last[n]!=undefined){
+						var rec = last[n];
+						// если последнее событие - в таблице и запуск насоса, следующее событие не записано в лог
+						if(rec.time<=table.end && (rec.state==1||rec.state==3)){
+							var rec1 = to_event_record("n="+n+"&state="+4+"&time="+table.end.toISOString());
+							if(time<=table.end){
+								rec1.time=time;
+								rec1["currentTime"] = true;
+							}
+							onrecord(rec1);
+						}
+					}
+				}
+				after();
+			});
+		},
+	
+	newDiv:function(event,parent){
+		var div = document.createElement("div");
+		table.setStyle(div,event);
+		div.innerHTML = event.time.toLocaleTimeString();
+		parent.appendChild(div);
+		event.elem = div;
+		return div;
+	},
+	getScore:function(index){
+		var x = index
+		var hour_count = 0;
+		var total = 0;
+		var start = 0;
+			
+		for(var y=0;y<24;y++){
+			if(!table.hours[y][x] || !table.hours[y][x].events) return;
+			var events = table.hours[y][x].events;
+			events = events.sort(function(a,b){return a.time<b.time?-1:1;});
+			for(var e=0;e<events.length;e++){
+				
+				//console.log(index+ " "+e+" "+events[e].state+" " + start)
+				
+				if(events[e].state=="1" || events[e].state=="3"){
+					start=events[e].time;
+				}else{
+					if(start!=0){
+						total += events[e].time-start;
+						start=0;
+					}else{  //
+					}
+				}
+			}
+		}
+		//id, elem, values table.score.values
+		total = total/1000;
+		var s = parseInt(total)%60;
+		var m = parseInt(total/60)%60;
+		var h = parseInt(total/60/60)%24;
+		//if(!!s && !!m && !!h){
+			table.score[x].elem.innerHTML = (h<10?"0":"")+h+":"+(m<10?"0":"")+m+":"+(s<10?"0":"")+s;
+		//}else{
+		//	table.score[x].elem.innerHTML = "";
+		//}
+	},
+	refresh:function(){
+		for(var y=0;y<24;y++)
+		{
+			for(var x=0;x<5;x++){
+				table.hours[y][x].elem.innerHTML="";
+				var events = table.hours[y][x].events;
+				//if(events.length>0){
+				//	newDiv(events[0],table.hours[y][x].elem);
+//						table.hours[y][x].elem.innerHTML = events[0].time.toLocaleTimeString();
+					
+				//}
+				
+				if(events.length>1){
+					events.sort(function(a,b){
+						return a.time<b.time?-1:1;
+					});
+					
+					var j = 1;
+					for (var i = 1, n = events.length; i < n; i++) { 
+						if (events[i].ids != events[j-1].ids) events[j++] = events[i]; 
+					}
+					events.length = j;
+				}
+				
+				for(var k=0;k<events.length;k++){
+					var ndiv = table.newDiv(events[k],table.hours[y][x].elem);
+					if(events[k].currentTime){
+						ndiv.className = "time " +ndiv.className;
+						ndiv.event = events[k];
+					}
+				
+					table.hours[y][x].elem.insertBefore(ndiv,events[k].elem);
+						
+					//	сортировка
+					//if(k>0){
+					//	var j=k-1;
+					//	for(;j>=0;j--){
+					//		if(events[j].time>events[k].time){
+					//			break;
+					//		}
+					//	}
+					//	if(j>=0 && j<k){
+					//		table.hours[y][x].elem.insertBefore(ndiv,events[j].elem);
+					//	}
+					//}
+				}
+//						table.hours[y][x].elem.innerHTML+="<br>"+events[k].time.toLocaleTimeString();
+			}
+		}
+		
+		table.fixWidth();
+		
+	},
+	height_cell:16,
+//	height_pixel:function(){return table.elem.clientHeight;},
+//	height_p_pixel:function(){return table.elem.parentNode.clientHeight;},
+//	top_p_pixel:function(){return table.elem.parentNode.scrollTop;},
+	
+	hours:[],
+	fixWidth:function(){
+		var widths = 40;
+		for(var x=0;x<5;x++){
+			widths+=parseInt(table.hours[0][x].elem.offsetWidth)+1;
+		}
+		var spacer = document.getElementsByClassName("table-score-spacer-cell")[0];
+		
+		spacer.style["width"]=(parseInt(table.tscore.offsetWidth) - widths)+"px";
+	},
+	
+	setStyle:function(elem,rec){
+		//console.log(elem.className);
+		//var classes = [];
+		//var tablestyles = ["table-cell-off","table-cell-on","table-cell-error"];
+		//if(elem.className){
+		//	classes = elem.className.split(" ");
+		//	for(var i=0;i<classes.length;i++){
+		//		if(tablestyles.includes(classes[i])){
+		//			classes[i]="";
+		//		}
+		//	}
+		//}
+		switch(rec.state)
+		{
+			case "0":
+				//elem.style["background"] = "lightgreen"; 
+				//classes.push(tablestyles[0]);
+				elem.className = "table-cell-off";
+			break;
+			case "2":
+				//elem.style["background"] = "red";
+				//classes.push(tablestyles[2]);
+				elem.className = "table-cell-error";
+			break;
+			case "1":
+			default:
+				//elem.style["background"] = "#eee"; 
+			//	classes.push(tablestyles[1]);
+				elem.className = "table-cell-on";
+			break;
+		}
+		//elem.className = classes.join(" ");
+		//console.log(elem.className);
+	},
+	find_by_time_period:function(start_time, end_time, backward = -1, state = -1, n = -1, onresult, onfail){
+		
+		var reqstr = "/server?start_log="+start_time.toISOString()+"&end_log="+end_time.toISOString()+(backward==-1?"":"&mode="+backward)+(state==-1?"":"&states="+state)+(n==-1?"":"&ns="+n)+"&log";
+		
+		ajax(reqstr,table,function(elem,response)
+		{
+			var list = response.split("n=");
+			if(list.length<1){
+				if(onfail!=null) onfail(rec);
+				return;
+			}
+			//list.shift();  //  skip log=...
+			if(onresult!=null) onresult(list);
+			//for(var i=0;i<list.length;i++){
+				//var rec = to_event_record("n="+list[i]);
+				//if(rec.hasOwnProperty("time") && rec.time.getYear()>100){
+				//	if(onresult!=null) onresult(rec, i, list);
+				//}	
+			//}
+		});
+	}
+	
+}
+
+
+function refresh_state_serial()
+{
+	for(var i=0;i<Nasos.length;i++){
+		var nIndex = i;
+		ajax("/com?n="+(i+1)+"&state=?",nIndex,function(index,response){
+			var hash = to_hash(response);
+			//var n = parseInt(hash["n"]);
+			var state = parseInt(hash["state"]);
+			if(!(index===null) && !(state===null)){
+				set_state(index,state);
+			}
+		});
+	}
+}
+
+var refresh_timer;
+
+function refresh_state_server(){
+	for(var i=0;i<Nasos.length;i++){
+		var nIndex = i;
+		ajax("/server?ns="+(nIndex+1)+"&states",nIndex,function(index,response){
+			var hash = to_hash(response);
+			var state = parseInt(hash["state"]);
+//			console.log(hash["n"] +" "+hash["state"])
+			if(index!=null && state!=null){
+				set_state(index,state);
+			}
+		});
+	}
+	currentScreen.create();
+	if(refresh_timer)clearTimeout(refresh_timer);
+	refresh_timer = setTimeout(currentScreen.create,5000);
+}
+
+var NasosC = function(number){
+	return {
+		elem:document.getElementById("n"+number),
+		img:document.getElementById("img"+number),
+		n:number,
+		state:0
+	};
+}
+
+function set_state(index, state)
+{
+	
+	var ns = Nasos[index];
+	var newState = false;
+	if(ns.state != state){
+//console.log("Nasos "+ ns.n +" state "+state);
+		switch(state)
+		{
+			case 0:
+				audio_off.start();
+				ns.elem.style["background"] = "#eee";
+				ns.img.style["visibility"] = "hidden";
+			break;
+			case 1:
+				audio_on.start();
+				ns.elem.style["background"] = "#eee";
+				ns.img.style["visibility"] = "visible";
+			break;
+			case 2:
+				audio_error.start();
+				ns.elem.style["background"] = "red";
+				ns.img.style["visibility"] = "visible";
+			break;
+		}
+		newState = true;
+		ns.state = state;
+	}
+	if(newState){
+	
+	//	table.create();
+//	console.log(table.date)
+	//	setTimeout(function(){console.log("table refresh");table.create();},500);
+	}
+}
+function onResizeBody(){
+	if(!!Nasos && !!Nasos.length){
+		for(var i=0;i<5;i++){
+			if(Nasos[i]!=null && Nasos[i].img!=null){
+				onResizeImg(Nasos[i].img);
+			}
+		}
+	}
+	currentScreen.fixWidth();
+}
+function onResizeImg(img){
+	if(!!img.clientWidth){
+		var elem = img.parentNode;
+		var aspectRatio = parseInt(img.clientHeight) / parseInt(img.clientWidth);
+		if(parseInt(elem.clientWidth)*aspectRatio > parseInt(elem.clientHeight)){
+			img.style.height="100%";
+			img.style.width="auto";
+		}else{
+			img.style.height="auto";
+			img.style.width="100%";
+		}
+	}
+}
+
+
+
+</script>
+	</head>
+	<body onload="init()" onresize="onResizeBody()">
+		<div id="window_wrap">
+			<div id="window">
+				<div id="log_window">
+					<div style="height:calc( 100% - 25px);overflow:auto">
+						<div id="log" style="width:100%;">
+						</div>
+					</div>
+					<div id="score">
+					</div>
+				</div>
+				<div id="stateInfo">
+					<div style="display:inline-block;width:40px">
+					</div>
+					<div class="nasos" id="n1">
+						<div id="state1"></div>
+						<img id="img1" class="nasos_image" src = "/images/95112930.png"/>
+					</div>
+					<div class="nasos" id="n2">
+						<div id="state2"></div>
+						<img id="img2" class="nasos_image" src = "/images/95112930.png"/>
+					</div>
+					<div class="nasos" id="n3">
+						<div id="state3"></div>
+						<img id="img3" class="nasos_image" src = "/images/95112930.png"/>
+					</div>
+					<div class="nasos" id="n4">
+						<div id="state4"></div>
+						<img id="img4" class="nasos_image" src = "/images/95112930.png"/>
+					</div>
+					<div class="nasos" id="n5">
+						<div id="state5"></div>
+						<img id="img5" class="nasos_image" src = "/images/СД.png"/>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="menu">
+			<div id="connection">
+			</div>
+			<div id="time"></div>
+		</div>
+	</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
