@@ -100,9 +100,10 @@ console.log("Unhandled req:" + req.url);
 	db_query(query,client,function(result){
 	  for (let row of res.rows) {
 		  res.write(row);
-	//	console.log(JSON.stringify(row));
+		console.log(JSON.stringify(row));
 	  }
 	});
+	res.write("<br /> db");
   }
 
 //  res.end("OK");
