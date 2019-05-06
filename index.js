@@ -79,10 +79,29 @@ console.log("Unhandled req:" + req.url);
     // иначе считаем это запросом к обычному файлу и выводим его
     file.serve(req, res); // (если он есть)
   }
+  if(req.url=='/db'){
+	const { Client } = require('pg');
+
+	const client = new Client({
+	  connectionString: process.env.DATABASE_URL,
+	  ssl: true,
+	});
+
+	client.connect();
+
+	client.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
+	  if (err) throw err;
+	  for (let row of res.rows) {
+		console.log(JSON.stringify(row));
+	  }
+	  client.end();
+	});
+  
+  }
 
 //  res.end("OK");
 }
 
-var PORT = process.env.PORT || 5000;
-console.log(PORT);
+var PORT = process.env.PORT || 80;
+console.log("Server start at port "+PORT);
 http.createServer(accept).listen(PORT);
