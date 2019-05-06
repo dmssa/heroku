@@ -1,7 +1,7 @@
 var http = require('http');
 var url = require('url');
 var querystring = require('querystring');
-var static = require('node-static');
+var static = require('./node_modules/node-static/lib/node-static.js');
 var file = new static.Server('.');
 
 function to_kv(string, separator){
