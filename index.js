@@ -82,11 +82,7 @@ console.log("Unhandled req:" + req.url);
 		res.write("connection=1");
 	}
 	res.end("");
-  } else {
-    // иначе считаем это запросом к обычному файлу и выводим его
-    file.serve(req, res); // (если он есть)
-  }
-  if(params[0]=='/db'){
+  }else if(params[0]=='/db'){
 	const { Client } = require('pg');
 
 	const client = new Client({
@@ -104,6 +100,10 @@ console.log("Unhandled req:" + req.url);
 	  }
 	});
 	res.write("<br /> db");
+	res.end("");
+  } else {
+    // иначе считаем это запросом к обычному файлу и выводим его
+    file.serve(req, res); // (если он есть)
   }
 
 //  res.end("OK");
