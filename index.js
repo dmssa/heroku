@@ -93,12 +93,21 @@ console.log("Unhandled req:" + req.url);
 	client.connect();
 	var query = "SELECT version();";
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
+	
+	console.log("1");
 	db_query(query,client,function(result){
+	  
+	console.log("2");
 	  for (let row of result.rows) {
-		  res.write(row);
+		  
+		console.log("3");
+		res.write(row);
 		console.log(JSON.stringify(row));
 	  }
+	  
+	console.log("4");
 	});
+	console.log("5");
 	res.write("<br /> db");
 	res.end("");
   } else {
