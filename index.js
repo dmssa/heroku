@@ -88,7 +88,7 @@ console.log("Unhandled req:" + req.url);
 	});
 
 	client.connect();
-
+	client.write("db connected");
 	client.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
 	  if (err) throw err;
 	  for (let row of res.rows) {
