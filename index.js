@@ -98,7 +98,7 @@ console.log("Unhandled req:" + req.url);
 	var query = "SELECT version();";
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	db_query(query,client,function(result){
-	  for (let row of res.rows) {
+	  for (let row of result.rows) {
 		  res.write(row);
 		console.log(JSON.stringify(row));
 	  }
