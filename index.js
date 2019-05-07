@@ -323,12 +323,11 @@ console.log("Unhandled req:" + req.url);
 	db.query(query,"",function(err,result){
 	  for (let row of result.rows) {
 		  
-//		res.write(row);
-		console.log(JSON.stringify(row));
+		res.write(JSON.stringify(row));
 	  }
 	  db.client.end();
 	});
-//	res.end("");
+	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
     file.serve(req, res); // (если он есть)
