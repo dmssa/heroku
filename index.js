@@ -64,7 +64,7 @@ let db={
 		let promise = new Promise(
 			(resolve,result)=>{
 				this.client.query(str,values,(err,result)=>{
-					done(err,res); 
+					done(err,result); 
 					resolve();
 					}
 				);
