@@ -332,13 +332,13 @@ console.log("Unhandled req:" + req.url);
 	
 	db.query(query,"",(err,result)=>{
 		for (let row of result.rows) {
-			res.write(JSON.stringify(row));
+			res.write("<p>"+JSON.stringify(row)+"</p>");
 		}
 	});
 	
 	db.query(query,"",(err,result)=>{
 		for (let row of result.rows) {
-			res.write(JSON.stringify(row));
+			res.write("<h1>"+JSON.stringify(row)+"</h1>");
 		}
 	});
 	db.end(res);
