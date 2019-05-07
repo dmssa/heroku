@@ -52,7 +52,7 @@ let db={
 	dbCalls:[],
 	client:null,
 	
-	query:function(str, values, resolve){
+	query:function(str, values, done){
 		if(this.client==null){
 			const { Client } = require('pg');
 			this.client = new Client({
@@ -61,7 +61,7 @@ let db={
 			});
 			this.client.connect();
 		}
-		let promise = new Promise(this.client.query(str,values,function(err,res){resolve(err,res); resolve();}));
+		let promise = new Promise(this.client.query(str,values,function(err,res){done(err,res); resolve();}));
 		this.dbCalls.push( query );
 		return query;
 	},
