@@ -323,7 +323,7 @@ console.log("Unhandled req:" + req.url);
 	db.query(query,"",function(err,result){
 	  for (let row of result.rows) {
 		  
-		res.write(row);
+//		res.write(row);
 		console.log(JSON.stringify(row));
 	  }
 	  db.client.end();
