@@ -46,14 +46,31 @@ if(rec["ids"]=="undefined"){
 	return rec;
 }
 
-function db_query(str,client,response_fn){
-	client.query(str, (err, res) => {
-	  if (err) throw err;
-	  response_fn(res);
-	  client.end();
-	});
-	
+
+let db={
+	dbCalls:[],
+	client:null,
+	query:function(str){
+		if(this.client==null){
+			const { Client } = require('pg');
+
+			this.client = new Client({
+			  connectionString: process.env.DATABASE_URL,
+			  ssl: true,
+			});		
+		}
+		let query = this.client.query(str).catch(e => console.error(e.stack));
+		this.dbCalls.push(query);
+		return query;
+	},
+	end:function(response_fn){
+		return Promise.all(this.dbCalls).then(res =>{
+			response_fn(res);
+		});
+	}
 }
+
+
 
 function accept(req, res) {
 
@@ -83,32 +100,20 @@ console.log("Unhandled req:" + req.url);
 	}
 	res.end("");
   }else if(params[0]=='/db'){
-	const { Client } = require('pg');
+	
 
-	const client = new Client({
-	  connectionString: process.env.DATABASE_URL,
-	  ssl: true,
-	});
-
-	client.connect();
 	var query = "SELECT version();";
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	
-	console.log("1");
-	db_query(query,client,function(result){
-	  
-	console.log("2");
+	db.query(query);
+	db.end(function(result){
 	  for (let row of result.rows) {
 		  
-		console.log("3");
 		res.write(row);
 		console.log(JSON.stringify(row));
 	  }
 	  
-	console.log("4");
 	});
-	console.log("5");
-	res.write("<br /> db");
 	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
