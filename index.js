@@ -78,11 +78,12 @@ let db={
 		Promise.all(this.dbCalls).then(res =>{
 			this.connection_count--;
 			if(this.connection_count==0){
-				if(!!this.client && !!response){
+				if(!!this.client){
 					this.client.end();
+				}
+				if(!!response){
 					response.end("");
-				}	
-				
+				}
 			}
 		});		
 		
