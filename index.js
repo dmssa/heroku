@@ -66,14 +66,14 @@ let db={
 				this.client.query(str,values,(err,result)=>{
 					done(err,result); 
 					resolve();
-					}
-				);
+				});
 			}
 		);
 		this.dbCalls.push( promise );
 		return promise;
 	},
 	end:function(response){
+		console.log("end " + response);
 		Promise.all(this.dbCalls).then(res =>{
 			console.log("promises");
 		});
@@ -325,8 +325,8 @@ console.log("Unhandled req:" + req.url);
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	
 	db.query(query,"",function(err,result){
-		console.log(err);
-		console.log(result);
+		console.log("err "+err);
+		console.log("res "+result);
 //	  for (let row of result.rows) {
 		  
 //		res.write(JSON.stringify(row));
