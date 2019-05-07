@@ -73,11 +73,14 @@ let db={
 		this.dbCalls.push( promise );
 		return promise;
 	},
-	end:function(){
-		return Promise.all(this.dbCalls).then(res =>{
+	end:function(response){
+		Promise.all(this.dbCalls).then(res =>{
 			console.log("promises");
 		});
 		this.client.end();
+		
+//	  db.client.end();
+		response.end("");
 	}
 }
 
@@ -326,11 +329,8 @@ console.log("Unhandled req:" + req.url);
 		  
 		res.write(JSON.stringify(row));
 	  }
-	  db.client.end();
-	  
 	});
 	db.end();
-	res.end("");
 //	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
