@@ -50,8 +50,8 @@ if(rec["ids"]=="undefined"){
 let db={
 	pg:null,
 	dbCalls:[],
-	connection_count:0,
 	client:null,
+	connection_count:0,
 	
 	query:function(str, values, done){
 		if(this.client==null){
@@ -77,8 +77,8 @@ let db={
 	end:function(response){
 		console.log("end " + response);
 		Promise.all(this.dbCalls).then(res =>{
-			connection_count--;
-			if(connection_count==0){
+			this.connection_count--;
+			if(this.connection_count==0){
 				if(!!client && !!response){
 					this.client.end();
 					response.end("");
