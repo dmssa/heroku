@@ -75,18 +75,15 @@ let db={
 		return promise;
 	},
 	end:function(response){
-		console.log("end " + response);
 		Promise.all(this.dbCalls).then(res =>{
 			this.connection_count--;
 			if(this.connection_count==0){
-				console.log("prom ");
 				if(!!this.client && !!response){
 					this.client.end();
 					response.end("");
 				}	
 				
 			}
-			console.log("promises");
 		});		
 		
 //	  db.client.end();
@@ -334,12 +331,10 @@ console.log("Unhandled req:" + req.url);
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	
 	db.query(query,"",function(err,result){
-		console.log("err "+err);
-		console.log("res "+result);
-//	  for (let row of result.rows) {
+	  for (let row of result.rows) {
 		  
-//		res.write(JSON.stringify(row));
-//	  }
+		res.write(JSON.stringify(row));
+	  }
 	});
 	db.end(res);
 //	res.end("");
