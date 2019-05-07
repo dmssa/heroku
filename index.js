@@ -61,16 +61,15 @@ let db={
 			});
 			this.client.connect();
 		}
-		var client = this.client;
-		let query = this.client.query(str,values,resolve);
+		let promise = new Promise(this.client.query(str,values,function(err,res){resolve(err,res); resolve();}));
 		this.dbCalls.push( query );
 		return query;
 	},
 	end:function(){
-		this.client.end();
 		return Promise.all(this.dbCalls).then(res =>{
 			console.log("promises");
 		});
+		this.client.end();
 	}
 }
 
@@ -314,14 +313,16 @@ console.log("Unhandled req:" + req.url);
 	var query = "SELECT version();";
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	
-	console.log(db.query(query,"",function(err,result){
+	db.query(query,"",function(err,result){
 	  for (let row of result.rows) {
 		  
 		res.write(JSON.stringify(row));
 	  }
 	  db.client.end();
-	  res.end("");
-	}));
+	  
+	});
+	db.end();
+	res.end("");
 //	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
