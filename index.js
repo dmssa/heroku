@@ -70,8 +70,8 @@ let db={
 				);
 			}
 		);
-		this.dbCalls.push( query );
-		return query;
+		this.dbCalls.push( promise );
+		return promise;
 	},
 	end:function(){
 		return Promise.all(this.dbCalls).then(res =>{
