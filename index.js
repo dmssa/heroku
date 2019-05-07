@@ -50,7 +50,7 @@ if(rec["ids"]=="undefined"){
 let db={
 	pg:null,
 	dbCalls:[],
-	connection_count:0.
+	connection_count:0,
 	client:null,
 	
 	query:function(str, values, done){
