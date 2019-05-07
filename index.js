@@ -325,10 +325,12 @@ console.log("Unhandled req:" + req.url);
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	
 	db.query(query,"",function(err,result){
-	  for (let row of result.rows) {
+		console.log(err);
+		console.log(result);
+//	  for (let row of result.rows) {
 		  
-		res.write(JSON.stringify(row));
-	  }
+//		res.write(JSON.stringify(row));
+//	  }
 	});
 	db.end(res);
 //	res.end("");
