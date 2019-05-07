@@ -62,20 +62,14 @@ let db={
 			this.client.connect();
 		}
 		var client = this.client;
-		console.log(client);
-		return this.client.query(str,values,resolve);
-		//(err,res)=>{
-		//	if (err) throw err;
-		//	for (let row of res.rows) {
-		//		console.log(JSON.stringify(row));
-		//	}
-		//	client.end();
-		//});
+		let query = this.client.query(str,values,resolve);
+		this.dbCalls.push( query );
+		return query;
 	},
 	end:function(){
 		this.client.end();
 		return Promise.all(this.dbCalls).then(res =>{
-			response_fn(res);
+			console.log("promises");
 		});
 	}
 }
@@ -320,14 +314,14 @@ console.log("Unhandled req:" + req.url);
 	var query = "SELECT version();";
 	//var query = 'SELECT table_schema,table_name FROM information_schema.tables;'
 	
-	db.query(query,"",function(err,result){
+	console.log(db.query(query,"",function(err,result){
 	  for (let row of result.rows) {
 		  
 		res.write(JSON.stringify(row));
 	  }
 	  db.client.end();
 	  res.end("");
-	});
+	}));
 //	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
