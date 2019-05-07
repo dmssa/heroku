@@ -326,8 +326,9 @@ console.log("Unhandled req:" + req.url);
 		res.write(JSON.stringify(row));
 	  }
 	  db.client.end();
+	  res.end("");
 	});
-	res.end("");
+//	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
     file.serve(req, res); // (если он есть)
