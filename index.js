@@ -61,7 +61,15 @@ let db={
 			});
 			this.client.connect();
 		}
-		let promise = new Promise(this.client.query(str,values,function(err,res){done(err,res); resolve();}));
+		let promise = new Promise(
+			(resolve,result)=>{
+				this.client.query(str,values,(err,result)=>{
+					done(err,res); 
+					resolve();
+					}
+				);
+			}
+		);
 		this.dbCalls.push( query );
 		return query;
 	},
