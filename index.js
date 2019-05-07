@@ -50,6 +50,7 @@ if(rec["ids"]=="undefined"){
 let db={
 	pg:null,
 	dbCalls:[],
+	connection_count:0.
 	client:null,
 	
 	query:function(str, values, done){
@@ -69,20 +70,23 @@ let db={
 				});
 			}
 		);
+		this.connection_count++;
 		this.dbCalls.push( promise );
 		return promise;
 	},
 	end:function(response){
 		console.log("end " + response);
 		Promise.all(this.dbCalls).then(res =>{
-			console.log("promises");
-		}).then(()=>{
-			if(!!client && !!response){
-				this.client.end();
-				response.end("");
+			connection_count--;
+			if(connection_count==0){
+				if(!!client && !!response){
+					this.client.end();
+					response.end("");
+				}	
+				
 			}
-		});
-		
+			console.log("promises");
+		});		
 		
 //	  db.client.end();
 	}
