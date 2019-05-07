@@ -76,11 +76,15 @@ let db={
 		console.log("end " + response);
 		Promise.all(this.dbCalls).then(res =>{
 			console.log("promises");
+		}).then(()=>{
+			if(!!client && !!response){
+				this.client.end();
+				response.end("");
+			}
 		});
-		this.client.end();
+		
 		
 //	  db.client.end();
-		response.end("");
 	}
 }
 
