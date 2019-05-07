@@ -79,7 +79,8 @@ let db={
 		Promise.all(this.dbCalls).then(res =>{
 			this.connection_count--;
 			if(this.connection_count==0){
-				if(!!client && !!response){
+				console.log("prom ");
+				if(!!this.client && !!response){
 					this.client.end();
 					response.end("");
 				}	
