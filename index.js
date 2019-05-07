@@ -330,7 +330,7 @@ console.log("Unhandled req:" + req.url);
 		res.write(JSON.stringify(row));
 	  }
 	});
-	db.end();
+	db.end(res);
 //	res.end("");
   } else {
     // иначе считаем это запросом к обычному файлу и выводим его
